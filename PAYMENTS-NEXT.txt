@@ -1,0 +1,16 @@
+PAYMENT PROCESSING PLAN
+
+For custom jobs, quote-first payment is safer than charging before specifications are reviewed.
+
+Needed to add payments:
+- A merchant account with a payment provider (Stripe or Square are common choices).
+- GingerSnap business/contact/bank details required by that provider.
+- Decide deposit policy: full payment, percentage deposit, or invoice balance.
+- Decide which products have fixed prices and which remain quote-only.
+- Hosted HTTPS deployment.
+- Backend endpoints for creating checkout sessions/payment links.
+- A verified webhook endpoint to record successful/failed/refunded payments.
+- Order statuses such as NEW → QUOTED → APPROVED → PAID → IN PRODUCTION → READY/SHIPPED.
+- Tax/shipping rules appropriate to the business.
+
+Never store raw credit/debit card numbers on the GingerSnap server.

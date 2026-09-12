@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="GingerSnap custom apparel, 3D printing, vehicle decals and custom products.">
+<title>GingerSnap | Custom Made Your Way</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site-header">
+ <a class="brand" href="#home">GingerSnap<small>CUSTOM • PRINT • CREATE</small></a>
+ <button class="menu" aria-label="Open menu">☰</button>
+ <nav><a href="#shop">Shop</a><a href="#apparel">Apparel</a><a href="#printing">3D Printing</a><a href="#decals">Vehicle Decals</a><a href="#custom">Custom Products</a><a href="#quote">Quote</a><button id="cartBtn" class="cart">Cart <span id="cartCount">0</span></button></nav>
+</header>
+
+<main id="home">
+<section class="hero">
+ <div class="hero-copy"><p class="kicker">YOUR IDEAS. OUR INK. ANYWHERE.</p>
+ <h1>CREATE IT.<br><span>CUSTOMIZE IT.</span><br>MAKE IT YOURS.</h1>
+ <p>Custom apparel, 3D printing, vehicle graphics and personalized products—all from one creative shop.</p>
+ <div class="actions"><a class="btn" href="#quote">Start a Custom Job →</a><a class="btn outline" href="#shop">Shop Services →</a></div></div>
+ <div class="hero-art"><img class="logo" src="assets/gingersnap-logo.png" alt="GingerSnap logo"><div class="hero-tags"><b>APPAREL</b><b>3D PRINTING</b><b>DECALS</b><b>CUSTOM</b></div></div>
+</section>
+
+<section id="shop" class="shop">
+ <div class="section-head"><p class="kicker">GINGERSNAP SALES SHOP</p><h2>What can we make for you?</h2><p>Choose a starting point. Custom jobs can be quoted before you buy.</p></div>
+ <div class="cards">
+  <article id="apparel"><div class="art">👕</div><h3>Custom Apparel</h3><p>Shirts, hoodies, hats, workwear, teams, businesses and events.</p><button class="btn choose" data-service="Custom Apparel">Build My Apparel Job</button></article>
+  <article id="printing"><div class="art">⬡</div><h3>3D Printing</h3><p>Prototypes, replacement pieces, models, signs and one-off creations.</p><button class="btn choose" data-service="3D Printing">Start a 3D Print</button></article>
+  <article id="decals"><div class="art">◆</div><h3>Vehicle Decals</h3><p>Lettering and custom graphics for cars, trucks, Jeeps, boats, RVs and equipment.</p><button class="btn choose" data-service="Vehicle Decals">Design My Vehicle</button></article>
+  <article id="custom"><div class="art">★</div><h3>Custom Products</h3><p>Stickers, tumblers, signs, gifts, promotional pieces and unusual ideas.</p><button class="btn choose" data-service="Custom Products">Create Something</button></article>
+ </div>
+</section>
+
+<section class="quick-products"><div class="section-head"><p class="kicker">POPULAR STARTING POINTS</p><h2>Quick shop</h2></div>
+ <div class="products">
+  <article><b>Custom T-Shirt Project</b><span>Quote based on garment, print and quantity</span><button class="add" data-item="Custom T-Shirt Project">Add Project</button></article>
+  <article><b>Custom Hoodie Project</b><span>Quote based on garment, print and quantity</span><button class="add" data-item="Custom Hoodie Project">Add Project</button></article>
+  <article><b>3D Print Project</b><span>Quote based on size, material and print time</span><button class="add" data-item="3D Print Project">Add Project</button></article>
+  <article><b>Vehicle Decal Project</b><span>Quote based on vehicle, coverage and design</span><button class="add" data-item="Vehicle Decal Project">Add Project</button></article>
+ </div>
+</section>
+
+<section id="quote" class="builder">
+ <div class="builder-intro"><p class="kicker">CUSTOM JOB BUILDER</p><h2>Tell GingerSnap what you're making.</h2><p>The form changes depending on the service you select, so we collect the information needed to prepare a useful quote.</p>
+ <div class="steps"><b>1 Choose</b><b>2 Describe</b><b>3 Upload</b><b>4 Review</b></div></div>
+ <form id="salesForm" enctype="multipart/form-data">
+  <fieldset><legend>1. Your project</legend>
+   <label>Service<select id="service" name="service"><option>Custom Apparel</option><option>3D Printing</option><option>Vehicle Decals</option><option>Custom Products</option></select></label>
+   <div id="apparelFields" class="conditional"><div class="two"><label>Apparel type<select name="apparel_type"><option>T-Shirts</option><option>Hoodies</option><option>Hats</option><option>Workwear</option><option>Team Apparel</option><option>Other</option></select></label><label>Estimated quantity<input name="quantity" type="number" min="1" placeholder="Example: 24"></label></div><label>Sizes / colors / garment preferences<textarea name="apparel_details" rows="3" placeholder="Example: 6 M, 10 L, 8 XL; black shirts"></textarea></label></div>
+   <div id="printFields" class="conditional hidden"><div class="two"><label>What are we printing?<input name="print_object" placeholder="Part, model, sign, prototype..."></label><label>Approximate size<input name="print_size" placeholder="Example: 6 x 4 x 2 inches"></label></div><label>Material / strength / use<textarea name="print_details" rows="3" placeholder="Tell us what the part needs to do"></textarea></label></div>
+   <div id="vehicleFields" class="conditional hidden"><div class="three"><label>Year<input id="year" name="vehicle_year" inputmode="numeric" placeholder="2024"></label><label>Make<input id="make" name="vehicle_make" placeholder="Jeep"></label><label>Model<input id="model" name="vehicle_model" placeholder="Wrangler"></label></div><div class="two"><label>Vehicle type<select name="vehicle_type"><option>Car</option><option>Truck</option><option>Jeep / SUV</option><option>Van</option><option>Boat</option><option>RV</option><option>Equipment</option><option>Other</option></select></label><label>Decal coverage<select name="coverage"><option>Lettering / small decals</option><option>Doors / partial graphics</option><option>Large side graphics</option><option>Not sure yet</option></select></label></div>
+<label>Installation option
+<select id="installation" name="installation">
+<option value="Self-install">I'll install the decals myself</option>
+<option value="GingerSnap installation">Have GingerSnap install them — additional charge</option>
+<option value="Need advice">I'm not sure — help me decide</option>
+</select></label>
+<div id="installNotice" class="install-notice"><b>Self-install:</b> GingerSnap supplies the finished decals for you to install.</div>
+<label>What do you want on the vehicle?<textarea name="vehicle_details" rows="3" placeholder="Business lettering, logo, stripe package, custom graphic..."></textarea></label></div>
+   <div id="customFields" class="conditional hidden"><label>What would you like us to make?<textarea name="custom_details" rows="4" placeholder="Describe your idea, size, quantity and how it will be used"></textarea></label></div>
+  </fieldset>
+  <fieldset><legend>2. Artwork & timing</legend><label>Project description<textarea required name="details" rows="4" placeholder="Tell us anything else we should know"></textarea></label>
+   <div class="two"><label>Needed by<input name="needed_by" type="date"></label><label>Budget range<select name="budget"><option>Not sure / need guidance</option><option>Under $100</option><option>$100–$250</option><option>$250–$500</option><option>$500–$1,000</option><option>$1,000+</option></select></label></div>
+   <label>Upload artwork / reference / 3D file<input type="file" name="artwork" accept="image/*,.pdf,.svg,.stl,.obj,.3mf"></label>
+  </fieldset>
+  <fieldset><legend>3. Contact & fulfillment</legend><div class="two"><label>Name<input required name="name"></label><label>Email<input required type="email" name="email"></label><label>Phone<input name="phone" type="tel"></label><label>How should you receive it?<select name="fulfillment"><option>Shop pickup</option><option>Shipping</option><option>Local delivery / discuss options</option></select></label></div></fieldset>
+  <label class="check"><input required type="checkbox"> I understand this is a quote request, not a final purchase.</label>
+  <div id="submitStatus" class="submit-status"></div>
+  <button class="btn" id="submitQuote" type="submit">Submit Quote Request →</button><p id="formMessage" class="form-message" aria-live="polite"></p>
+ </form>
+</section>
+
+<section class="how"><div><p class="kicker">FROM IDEA TO FINISHED PRODUCT</p><h2>Simple custom ordering.</h2></div><ol><li><b>Tell us what you need</b></li><li><b>Send artwork or an idea</b></li><li><b>Get your quote & proof</b></li><li><b>Approve production</b></li><li><b>Pickup, delivery or shipping</b></li></ol></section>
+<section class="cta"><h2>Have something unusual in mind?</h2><p>That's exactly what the custom-project form is for.</p><a class="btn" href="#quote">Tell Us Your Idea →</a></section>
+</main>
+
+<aside id="cartPanel" class="cart-panel" aria-hidden="true"><button id="closeCart">×</button><h2>Your Project List</h2><div id="cartItems"></div><p class="cart-note">This is a project list, not a checkout. GingerSnap will quote custom work after reviewing your details.</p><a class="btn" href="#quote" id="cartQuote">Request Quote →</a></aside><div id="shade" class="shade"></div>
+<footer><div class="brand">GingerSnap<small>CUSTOM • PRINT • CREATE</small></div><p>Custom Apparel • 3D Printing • Vehicle Decals • Custom Products</p><strong>Your Ideas. Our Ink. Anywhere.</strong></footer>
+<script src="script.js"></script></body></html>
