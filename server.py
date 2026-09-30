@@ -6,6 +6,7 @@ import uuid
 import datetime
 import os
 import shutil
+import mimetypes
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
@@ -66,6 +67,9 @@ class Handler(SimpleHTTPRequestHandler):
             ).isoformat(),
         }
 
+        # Keep track of uploaded files so they can be attached to email
+        email_attachments = []
+
         for key in form.keys():
             item = form[key]
 
@@ -81,9 +85,13 @@ class Handler(SimpleHTTPRequestHandler):
                         with open(dest, "wb") as f:
                             shutil.copyfileobj(subitem.file, f)
 
-                        values.append(str(dest.relative_to(ROOT)))
+                        values.append(safe)
+                        email_attachments.append((dest, safe))
+
                     else:
-                        values.append(make_json_safe(subitem.value))
+                        values.append(
+                            make_json_safe(subitem.value)
+                        )
 
                 record[key] = values
                 continue
@@ -96,17 +104,26 @@ class Handler(SimpleHTTPRequestHandler):
                 with open(dest, "wb") as f:
                     shutil.copyfileobj(item.file, f)
 
-                record[key] = str(dest.relative_to(ROOT))
+                # Show the customer's original filename in the quote
+                record[key] = safe
+
+                # Remember the actual file for the email attachment
+                email_attachments.append((dest, safe))
 
             # Handle normal form fields
             else:
                 record[key] = make_json_safe(item.value)
 
-        # Save quote
+        # Save quote record
         with open(QUOTES, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(record, ensure_ascii=False) + "\n"
+            )
 
-        print(f"Quote received successfully: {qid}", flush=True)
+        print(
+            f"Quote received successfully: {qid}",
+            flush=True
+        )
 
         # Email GingerSnap
         if os.getenv("GS_NOTIFY_EMAIL"):
@@ -116,23 +133,79 @@ class Handler(SimpleHTTPRequestHandler):
 
                 message = EmailMessage()
 
-                message["Subject"] = f"New GingerSnap quote {qid}"
+                message["Subject"] = (
+                    f"New GingerSnap quote {qid}"
+                )
+
                 message["From"] = os.getenv(
                     "GS_SMTP_FROM",
                     os.getenv("GS_SMTP_USER", "")
                 )
-                message["To"] = os.getenv("GS_NOTIFY_EMAIL")
 
-                message.set_content(
-                    "\n".join(
-                        f"{key}: {value}"
-                        for key, value in record.items()
-                    )
+                message["To"] = os.getenv(
+                    "GS_NOTIFY_EMAIL"
                 )
 
-                smtp_host = os.getenv("GS_SMTP_HOST")
+                # Create readable email body
+                lines = [
+                    "NEW GINGERSNAP QUOTE",
+                    "",
+                    f"Quote Number: {qid}",
+                    "",
+                ]
+
+                for key, value in record.items():
+                    if key not in (
+                        "quote_id",
+                        "created_at"
+                    ):
+                        lines.append(
+                            f"{key}: {value}"
+                        )
+
+                if email_attachments:
+                    lines.extend([
+                        "",
+                        "CUSTOMER ARTWORK:",
+                        "Artwork is attached to this email.",
+                    ])
+
+                message.set_content(
+                    "\n".join(lines)
+                )
+
+                # Attach uploaded customer artwork/files
+                for file_path, original_name in email_attachments:
+
+                    mime_type, encoding = (
+                        mimetypes.guess_type(original_name)
+                    )
+
+                    if mime_type:
+                        maintype, subtype = (
+                            mime_type.split("/", 1)
+                        )
+                    else:
+                        maintype = "application"
+                        subtype = "octet-stream"
+
+                    with open(file_path, "rb") as attachment:
+                        message.add_attachment(
+                            attachment.read(),
+                            maintype=maintype,
+                            subtype=subtype,
+                            filename=original_name,
+                        )
+
+                smtp_host = os.getenv(
+                    "GS_SMTP_HOST"
+                )
+
                 smtp_port = int(
-                    os.getenv("GS_SMTP_PORT", "587")
+                    os.getenv(
+                        "GS_SMTP_PORT",
+                        "50587"
+                    )
                 )
 
                 with smtplib.SMTP(
@@ -140,17 +213,22 @@ class Handler(SimpleHTTPRequestHandler):
                     smtp_port,
                     timeout=30
                 ) as smtp:
+
                     smtp.ehlo()
                     smtp.starttls()
                     smtp.ehlo()
+
                     smtp.login(
                         os.getenv("GS_SMTP_USER"),
                         os.getenv("GS_SMTP_PASSWORD"),
                     )
+
                     smtp.send_message(message)
 
                 print(
-                    f"Email notification sent successfully for {qid}",
+                    f"Email notification sent successfully "
+                    f"for {qid} with "
+                    f"{len(email_attachments)} attachment(s)",
                     flush=True,
                 )
 
@@ -185,7 +263,9 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     os.chdir(ROOT)
 
-    port = int(os.environ.get("PORT", "8000"))
+    port = int(
+        os.environ.get("PORT", "8000")
+    )
 
     print(
         f"GingerSnap server starting on port {port}",
