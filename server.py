@@ -8,7 +8,7 @@ import os
 import shutil
 import mimetypes
 
-ROOT = Path(__file__).resolve().parent 
+ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 UPLOADS = DATA / "uploads"
 
@@ -27,6 +27,34 @@ def make_json_safe(value):
         return [make_json_safe(v) for v in value]
 
     return value
+
+
+def get_customer_email(record):
+    """Find the customer's email address in the submitted form."""
+    for key in ("customer_email", "email"):
+        value = record.get(key)
+
+        if value:
+            if isinstance(value, list):
+                value = value[0] if value else ""
+
+            return str(value).strip()
+
+    return ""
+
+
+def get_customer_name(record):
+    """Find the customer's name for the confirmation email."""
+    for key in ("customer_name", "name"):
+        value = record.get(key)
+
+        if value:
+            if isinstance(value, list):
+                value = value[0] if value else ""
+
+            return str(value).strip()
+
+    return ""
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -67,7 +95,7 @@ class Handler(SimpleHTTPRequestHandler):
             ).isoformat(),
         }
 
-        # Keep track of uploaded files so they can be attached to email
+        # Keep track of uploaded files
         email_attachments = []
 
         for key in form.keys():
@@ -104,17 +132,14 @@ class Handler(SimpleHTTPRequestHandler):
                 with open(dest, "wb") as f:
                     shutil.copyfileobj(item.file, f)
 
-                # Show the customer's original filename in the quote
                 record[key] = safe
-
-                # Remember the actual file for the email attachment
                 email_attachments.append((dest, safe))
 
             # Handle normal form fields
             else:
                 record[key] = make_json_safe(item.value)
 
-        # Save quote record
+        # Save quote
         with open(QUOTES, "a", encoding="utf-8") as f:
             f.write(
                 json.dumps(record, ensure_ascii=False) + "\n"
@@ -125,11 +150,35 @@ class Handler(SimpleHTTPRequestHandler):
             flush=True
         )
 
-        # Email GingerSnap
+        # -----------------------------------------------------
+        # EMAIL SYSTEM
+        # -----------------------------------------------------
+
         if os.getenv("GS_NOTIFY_EMAIL"):
             try:
                 import smtplib
                 from email.message import EmailMessage
+
+                smtp_host = os.getenv("GS_SMTP_HOST")
+
+                smtp_port = int(
+                    os.getenv(
+                        "GS_SMTP_PORT",
+                        "50587"
+                    )
+                )
+
+                smtp_user = os.getenv("GS_SMTP_USER")
+                smtp_password = os.getenv("GS_SMTP_PASSWORD")
+
+                from_address = os.getenv(
+                    "GS_SMTP_FROM",
+                    smtp_user
+                )
+
+                # -------------------------------------------------
+                # EMAIL #1 - GINGERSNAP BUSINESS NOTIFICATION
+                # -------------------------------------------------
 
                 message = EmailMessage()
 
@@ -137,16 +186,11 @@ class Handler(SimpleHTTPRequestHandler):
                     f"New GingerSnap quote {qid}"
                 )
 
-                message["From"] = os.getenv(
-                    "GS_SMTP_FROM",
-                    os.getenv("GS_SMTP_USER", "")
-                )
-
+                message["From"] = from_address
                 message["To"] = os.getenv(
                     "GS_NOTIFY_EMAIL"
                 )
 
-                # Create clean, professional GingerSnap quote email
                 def clean_label(key):
                     labels = {
                         "name": "Customer Name",
@@ -188,13 +232,11 @@ class Handler(SimpleHTTPRequestHandler):
                     "----------------------------------------",
                 ]
 
-                # Add customer and job information
                 for key, value in record.items():
 
                     if key in ("quote_id", "created_at"):
                         continue
 
-                    # Don't show the artwork filename twice
                     value_text = str(value)
 
                     if any(
@@ -207,7 +249,6 @@ class Handler(SimpleHTTPRequestHandler):
                         f"{clean_label(key)}: {value}"
                     )
 
-                # Artwork section
                 lines.extend([
                     "",
                     "----------------------------------------",
@@ -232,11 +273,10 @@ class Handler(SimpleHTTPRequestHandler):
                         "No artwork was uploaded with this request."
                     )
 
-                # Footer
                 lines.extend([
                     "",
                     "----------------------------------------",
-                    "GINGERSNAP",
+                    "GingerSnap",
                     "Your Ideas. Our Ink. Anywhere.",
                     "info@gsaswag.com",
                     "----------------------------------------",
@@ -246,7 +286,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "\n".join(lines)
                 )
 
-                # Attach uploaded customer artwork/files
+                # Attach customer artwork to GingerSnap email
                 for file_path, original_name in email_attachments:
 
                     mime_type, encoding = (
@@ -269,16 +309,9 @@ class Handler(SimpleHTTPRequestHandler):
                             filename=original_name,
                         )
 
-                smtp_host = os.getenv(
-                    "GS_SMTP_HOST"
-                )
-
-                smtp_port = int(
-                    os.getenv(
-                        "GS_SMTP_PORT",
-                        "50587"
-                    )
-                )
+                # -------------------------------------------------
+                # SEND GINGERSNAP EMAIL
+                # -------------------------------------------------
 
                 with smtplib.SMTP(
                     smtp_host,
@@ -291,25 +324,123 @@ class Handler(SimpleHTTPRequestHandler):
                     smtp.ehlo()
 
                     smtp.login(
-                        os.getenv("GS_SMTP_USER"),
-                        os.getenv("GS_SMTP_PASSWORD"),
+                        smtp_user,
+                        smtp_password,
                     )
 
                     smtp.send_message(message)
 
                 print(
-                    f"Email notification sent successfully "
+                    f"GingerSnap notification sent successfully "
                     f"for {qid} with "
                     f"{len(email_attachments)} attachment(s)",
                     flush=True,
                 )
 
+                # -------------------------------------------------
+                # EMAIL #2 - CUSTOMER CONFIRMATION
+                # -------------------------------------------------
+
+                customer_email = get_customer_email(record)
+                customer_name = get_customer_name(record)
+
+                if customer_email:
+
+                    confirmation = EmailMessage()
+
+                    confirmation["Subject"] = (
+                        f"GingerSnap received your quote request - {qid}"
+                    )
+
+                    confirmation["From"] = from_address
+                    confirmation["To"] = customer_email
+                    confirmation["Reply-To"] = (
+                        "info@gsaswag.com"
+                    )
+
+                    if customer_name:
+                        greeting = f"Hi {customer_name},"
+                    else:
+                        greeting = "Hello,"
+
+                    confirmation_lines = [
+                        greeting,
+                        "",
+                        "Thank you for contacting GingerSnap!",
+                        "",
+                        "We have received your quote request.",
+                        "",
+                        f"Quote Request: {qid}",
+                        "",
+                    ]
+
+                    if email_attachments:
+                        confirmation_lines.extend([
+                            "We also received the artwork/file "
+                            "you submitted with your request.",
+                            "",
+                        ])
+
+                    confirmation_lines.extend([
+                        "We will review your project details "
+                        "and contact you with pricing and next steps.",
+                        "",
+                        "Please keep your quote number for reference.",
+                        "",
+                        "Thank you!",
+                        "",
+                        "GingerSnap",
+                        "Your Ideas. Our Ink. Anywhere.",
+                        "info@gsaswag.com",
+                    ])
+
+                    confirmation.set_content(
+                        "\n".join(confirmation_lines)
+                    )
+
+                    # Send customer confirmation
+                    with smtplib.SMTP(
+                        smtp_host,
+                        smtp_port,
+                        timeout=30
+                    ) as smtp:
+
+                        smtp.ehlo()
+                        smtp.starttls()
+                        smtp.ehlo()
+
+                        smtp.login(
+                            smtp_user,
+                            smtp_password,
+                        )
+
+                        smtp.send_message(
+                            confirmation
+                        )
+
+                    print(
+                        f"Customer confirmation sent successfully "
+                        f"for {qid} to {customer_email}",
+                        flush=True,
+                    )
+
+                else:
+                    print(
+                        f"No customer email found for {qid}; "
+                        f"confirmation not sent.",
+                        flush=True,
+                    )
+
             except Exception as ex:
                 print(
-                    f"Email notification failed for {qid}: "
+                    f"Email system failed for {qid}: "
                     f"{type(ex).__name__}: {ex}",
                     flush=True,
                 )
+
+        # -----------------------------------------------------
+        # RETURN SUCCESS TO WEBSITE
+        # -----------------------------------------------------
 
         body = json.dumps(
             {
