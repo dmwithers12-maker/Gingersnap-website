@@ -8,7 +8,7 @@ import os
 import shutil
 import mimetypes
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent 
 DATA = ROOT / "data"
 UPLOADS = DATA / "uploads"
 
