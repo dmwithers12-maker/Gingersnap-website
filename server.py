@@ -146,29 +146,101 @@ class Handler(SimpleHTTPRequestHandler):
                     "GS_NOTIFY_EMAIL"
                 )
 
-                # Create readable email body
+                # Create clean, professional GingerSnap quote email
+                def clean_label(key):
+                    labels = {
+                        "name": "Customer Name",
+                        "customer_name": "Customer Name",
+                        "email": "Customer Email",
+                        "customer_email": "Customer Email",
+                        "phone": "Phone",
+                        "customer_phone": "Phone",
+                        "service": "Service",
+                        "product": "Product",
+                        "quantity": "Quantity",
+                        "vehicle": "Vehicle",
+                        "vehicle_year": "Vehicle Year",
+                        "vehicle_make": "Vehicle Make",
+                        "vehicle_model": "Vehicle Model",
+                        "installation": "Installation",
+                        "install": "Installation",
+                        "description": "Description",
+                        "details": "Job Description",
+                        "notes": "Customer Notes",
+                        "artwork": "Artwork",
+                        "file": "Artwork",
+                    }
+
+                    return labels.get(
+                        key.lower(),
+                        key.replace("_", " ").title()
+                    )
+
                 lines = [
-                    "NEW GINGERSNAP QUOTE",
+                    "========================================",
+                    "        GINGERSNAP - NEW QUOTE",
+                    "========================================",
                     "",
-                    f"Quote Number: {qid}",
+                    f"QUOTE NUMBER: {qid}",
                     "",
+                    "----------------------------------------",
+                    "CUSTOMER / JOB INFORMATION",
+                    "----------------------------------------",
                 ]
 
+                # Add customer and job information
                 for key, value in record.items():
-                    if key not in (
-                        "quote_id",
-                        "created_at"
+
+                    if key in ("quote_id", "created_at"):
+                        continue
+
+                    # Don't show the artwork filename twice
+                    value_text = str(value)
+
+                    if any(
+                        filename == value_text
+                        for _, filename in email_attachments
                     ):
-                        lines.append(
-                            f"{key}: {value}"
-                        )
+                        continue
+
+                    lines.append(
+                        f"{clean_label(key)}: {value}"
+                    )
+
+                # Artwork section
+                lines.extend([
+                    "",
+                    "----------------------------------------",
+                    "CUSTOMER ARTWORK",
+                    "----------------------------------------",
+                ])
 
                 if email_attachments:
+
+                    for _, filename in email_attachments:
+                        lines.append(
+                            f"Attached: {filename}"
+                        )
+
                     lines.extend([
                         "",
-                        "CUSTOMER ARTWORK:",
-                        "Artwork is attached to this email.",
+                        "Customer artwork is attached to this email.",
                     ])
+
+                else:
+                    lines.append(
+                        "No artwork was uploaded with this request."
+                    )
+
+                # Footer
+                lines.extend([
+                    "",
+                    "----------------------------------------",
+                    "GINGERSNAP",
+                    "Your Ideas. Our Ink. Anywhere.",
+                    "info@gsaswag.com",
+                    "----------------------------------------",
+                ])
 
                 message.set_content(
                     "\n".join(lines)
